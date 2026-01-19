@@ -1,6 +1,9 @@
 # EC2 Module
 # Creates EC2 instances
 
+# NOTE: Amazon Linux 2 reaches end of support in June 2025
+# Consider migrating to Amazon Linux 2023 for future deployments
+# Filter for AL2023: values = ["al2023-ami-*-x86_64"]
 data "aws_ami" "amazon_linux_2" {
   most_recent = true
   owners      = ["amazon"]

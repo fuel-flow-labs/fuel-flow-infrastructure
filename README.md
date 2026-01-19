@@ -404,3 +404,18 @@ aws cloudformation describe-stacks \
 aws cloudformation validate-template \
   --template-body file://template.yaml
 ```
+
+## Future Enhancements
+
+Consider these improvements for production deployments:
+
+- Migrate from Amazon Linux 2 to Amazon Linux 2023 (AL2 EOL: June 2025)
+- Make RDS MySQL version configurable via variables
+- Implement variable-based SSH CIDR restrictions instead of 0.0.0.0/0
+- Add expanded special characters for RDS passwords
+- Align password policies between Terraform and CloudFormation
+- Implement Multi-AZ deployments for RDS
+- Add Application Load Balancer for EC2 instances
+- Configure Auto Scaling Groups
+- Set up CloudFront for static content delivery
+- Implement AWS WAF for additional security
