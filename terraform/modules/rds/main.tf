@@ -55,8 +55,8 @@ resource "aws_db_subnet_group" "rds_subnet_group" {
 resource "random_password" "db_password" {
   length  = 16
   special = true
-  # Avoid characters that might cause issues in connection strings
-  override_special = "!#$%&*()-_=+[]{}<>:?"
+  # Use conservative set of special characters safe for connection strings
+  override_special = "!@#$%^&*"
 }
 
 # Store password in AWS Secrets Manager
@@ -98,7 +98,7 @@ resource "aws_db_instance" "main" {
   maintenance_window      = "mon:04:00-mon:05:00"
 
   skip_final_snapshot       = var.environment != "prod"
-  final_snapshot_identifier = var.environment == "prod" ? "fuel-flow-db-${var.environment}-final-${formatdate("YYYY-MM-DD-hhmm", timestamp())}" : null
+  final_snapshot_identifier = var.environment == "prod" ? "fuel-flow-db-${var.environment}-final-snapshot" : null
 
   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
 

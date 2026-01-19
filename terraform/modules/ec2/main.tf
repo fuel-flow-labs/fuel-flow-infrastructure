@@ -40,6 +40,7 @@ resource "aws_security_group" "ec2_sg" {
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+    # NOTE: For production, restrict SSH to specific IP ranges or use a bastion host
   }
 
   ingress {
