@@ -14,9 +14,10 @@ This repository contains modular and reusable infrastructure code for deploying 
 The infrastructure includes the following AWS resources:
 
 - **S3 Buckets**: Application data, logs, and backups storage
-- **EC2 Instances**: Compute resources for application hosting
+- **Lambda Functions**: Serverless compute for microservices
+- **API Gateway**: REST API endpoints for Lambda functions
 - **RDS PostgreSQL**: Managed relational database
-- **IAM Roles**: Security policies for EC2, RDS, and Lambda
+- **IAM Roles**: Security policies for Lambda, RDS, and other services
 - **Security Groups**: Network security configurations
 - **Terraform State Backend**: S3 + DynamoDB for remote state management
 
@@ -32,12 +33,13 @@ The infrastructure includes the following AWS resources:
 │   └── modules/
 │       ├── terraform-state/    # S3 + DynamoDB for state backend
 │       ├── s3/                 # S3 bucket configurations
-│       ├── ec2/                # EC2 instance configurations
+│       ├── lambda/             # Lambda function configurations
+│       ├── api-gateway/        # API Gateway REST API
 │       ├── rds/                # RDS database configurations
 │       └── iam/                # IAM roles and policies
 ├── cloudformation/
 │   ├── s3-buckets.yaml         # S3 CloudFormation template
-│   ├── ec2-instances.yaml      # EC2 CloudFormation template
+│   ├── ec2-instances.yaml      # EC2 CloudFormation template (legacy)
 │   ├── rds-database.yaml       # RDS CloudFormation template
 │   └── iam-roles.yaml          # IAM CloudFormation template
 └── README.md
@@ -129,8 +131,6 @@ Create a `terraform.tfvars` file to customize variables:
 ```hcl
 aws_region              = "us-west-2"
 environment             = "prod"
-ec2_instance_type       = "t3.small"
-ec2_key_name            = "my-key-pair"
 rds_instance_class      = "db.t3.small"
 rds_allocated_storage   = 50
 ```
@@ -148,7 +148,7 @@ terraform output
 terraform destroy
 
 # Destroy specific module
-terraform destroy -target=module.ec2
+terraform destroy -target=module.lambda
 ```
 
 ## CloudFormation Setup and Usage
@@ -174,7 +174,9 @@ aws cloudformation create-stack \
   --region us-east-1
 ```
 
-### 3. Deploy EC2 Instances
+### 3. Deploy EC2 Instances (Legacy - Use Lambda for serverless)
+
+**Note**: The Terraform configuration now uses Lambda + API Gateway for serverless microservices. The EC2 CloudFormation template is kept for reference but not recommended for new deployments.
 
 ```bash
 aws cloudformation create-stack \
@@ -260,14 +262,23 @@ All buckets have:
 - Public access blocked
 - Environment-based naming
 
-### EC2 Module
+### Lambda Module
 
-Creates EC2 instances with:
-- Amazon Linux 2 AMI
-- Security group (SSH, HTTP, HTTPS)
-- IAM instance profile for S3 access
-- User data script for Apache installation
-- Configurable instance type and count
+Creates Lambda functions with:
+- Node.js 20.x runtime
+- VPC access for RDS connectivity
+- Environment variables for database configuration
+- CloudWatch Logs integration
+- IAM role with S3 and VPC permissions
+
+### API Gateway Module
+
+Creates REST API with:
+- Regional endpoint
+- Lambda proxy integration
+- `/api` base path with wildcard routes
+- CloudWatch access logging
+- Stage-based deployment (dev, staging, prod)
 
 ### RDS Module
 
@@ -282,9 +293,8 @@ Creates PostgreSQL RDS instance with:
 ### IAM Module
 
 Creates IAM roles for:
-- **EC2**: S3 access and CloudWatch logs
+- **Lambda**: S3 access, VPC access, and CloudWatch logs
 - **RDS**: Enhanced monitoring
-- **Lambda**: Basic execution and S3 access
 
 ## Security Best Practices
 
@@ -409,13 +419,15 @@ aws cloudformation validate-template \
 
 Consider these improvements for production deployments:
 
-- Migrate from Amazon Linux 2 to Amazon Linux 2023 (AL2 EOL: June 2025)
+- Migrate from Amazon Linux 2 to Amazon Linux 2023 (AL2 EOL: June 2025) if using EC2
 - Make RDS PostgreSQL version configurable via variables
-- Implement variable-based SSH CIDR restrictions instead of 0.0.0.0/0
+- Implement variable-based API Gateway authorization (API keys, Cognito, etc.)
 - Add expanded special characters for RDS passwords
 - Align password policies between Terraform and CloudFormation
 - Implement Multi-AZ deployments for RDS
-- Add Application Load Balancer for EC2 instances
-- Configure Auto Scaling Groups
-- Set up CloudFront for static content delivery
+- Add Lambda function layers for shared dependencies
+- Configure Auto Scaling for Lambda concurrency
+- Set up CloudFront for API Gateway caching
 - Implement AWS WAF for additional security
+- Add VPC configuration for Lambda functions
+- Configure custom domain names for API Gateway
