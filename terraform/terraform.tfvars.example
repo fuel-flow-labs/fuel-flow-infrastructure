@@ -1,0 +1,25 @@
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and customize for your environment
+# IMPORTANT: terraform.tfvars is excluded from git to protect sensitive data
+
+# AWS Configuration
+aws_region  = "us-east-1"
+environment = "dev"
+
+# Terraform State Backend
+# Note: These should match the bucket and table created by the terraform_state module
+state_bucket_name      = "fuel-flow-terraform-state"
+state_lock_table_name  = "fuel-flow-terraform-locks"
+
+# S3 Configuration
+s3_bucket_prefix = "fuel-flow"
+
+# RDS Configuration
+rds_db_name           = "fuelflowdb"
+rds_username          = "admin"
+rds_instance_class    = "db.t3.micro"
+rds_allocated_storage = 20
+
+# For production environments, consider:
+# rds_instance_class    = "db.t3.small"
+# rds_allocated_storage = 100
