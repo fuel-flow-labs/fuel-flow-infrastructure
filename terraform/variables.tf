@@ -32,19 +32,6 @@ variable "s3_bucket_prefix" {
   default     = "fuel-flow"
 }
 
-# EC2 Variables
-variable "ec2_instance_type" {
-  description = "EC2 instance type"
-  type        = string
-  default     = "t3.micro"
-}
-
-variable "ec2_key_name" {
-  description = "EC2 key pair name"
-  type        = string
-  default     = ""
-}
-
 # RDS Variables
 variable "rds_db_name" {
   description = "RDS database name"

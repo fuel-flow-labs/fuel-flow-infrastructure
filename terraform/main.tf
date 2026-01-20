@@ -46,14 +46,23 @@ module "iam" {
   environment = var.environment
 }
 
-# EC2 Module - Compute instances
-module "ec2" {
-  source = "./modules/ec2"
+# API Gateway Module - REST API
+module "api_gateway" {
+  source = "./modules/api-gateway"
 
-  instance_type     = var.ec2_instance_type
-  key_name          = var.ec2_key_name
-  environment       = var.environment
-  iam_instance_profile = module.iam.ec2_instance_profile_name
+  environment        = var.environment
+  lambda_invoke_arn  = module.lambda.invoke_arn
+}
+
+# Lambda Module - Serverless functions
+module "lambda" {
+  source = "./modules/lambda"
+
+  environment                = var.environment
+  lambda_role_arn           = module.iam.lambda_role_arn
+  api_gateway_execution_arn = module.api_gateway.api_execution_arn
+  db_endpoint               = module.rds.db_endpoint
+  db_name                   = module.rds.db_name
 }
 
 # RDS Module - Database instances

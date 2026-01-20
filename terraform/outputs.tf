@@ -18,25 +18,31 @@ output "application_buckets" {
 }
 
 # IAM Outputs
-output "ec2_role_arn" {
-  description = "IAM role ARN for EC2 instances"
-  value       = module.iam.ec2_role_arn
+output "lambda_role_arn" {
+  description = "IAM role ARN for Lambda functions"
+  value       = module.iam.lambda_role_arn
 }
 
-output "ec2_instance_profile_name" {
-  description = "IAM instance profile name for EC2"
-  value       = module.iam.ec2_instance_profile_name
+# Lambda Outputs
+output "lambda_function_name" {
+  description = "Name of the Lambda function"
+  value       = module.lambda.function_name
 }
 
-# EC2 Outputs
-output "ec2_instance_ids" {
-  description = "EC2 instance IDs"
-  value       = module.ec2.instance_ids
+output "lambda_function_arn" {
+  description = "ARN of the Lambda function"
+  value       = module.lambda.function_arn
 }
 
-output "ec2_public_ips" {
-  description = "EC2 instance public IP addresses"
-  value       = module.ec2.public_ips
+# API Gateway Outputs
+output "api_endpoint" {
+  description = "API Gateway endpoint URL"
+  value       = module.api_gateway.api_endpoint
+}
+
+output "api_id" {
+  description = "API Gateway REST API ID"
+  value       = module.api_gateway.api_id
 }
 
 # RDS Outputs

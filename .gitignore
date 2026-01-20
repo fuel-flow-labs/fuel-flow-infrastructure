@@ -47,3 +47,7 @@ Thumbs.db
 *.backup
 *.bak
 *.tmp
+
+# Lambda deployment packages
+*.zip
+lambda_function*.zip
