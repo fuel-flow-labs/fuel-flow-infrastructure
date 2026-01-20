@@ -39,7 +39,6 @@ The infrastructure includes the following AWS resources:
 │       └── iam/                # IAM roles and policies
 ├── cloudformation/
 │   ├── s3-buckets.yaml         # S3 CloudFormation template
-│   ├── ec2-instances.yaml      # EC2 CloudFormation template (legacy)
 │   ├── rds-database.yaml       # RDS CloudFormation template
 │   └── iam-roles.yaml          # IAM CloudFormation template
 └── README.md
@@ -174,23 +173,7 @@ aws cloudformation create-stack \
   --region us-east-1
 ```
 
-### 3. Deploy EC2 Instances (Legacy - Use Lambda for serverless)
-
-**Note**: The Terraform configuration now uses Lambda + API Gateway for serverless microservices. The EC2 CloudFormation template is kept for reference but not recommended for new deployments.
-
-```bash
-aws cloudformation create-stack \
-  --stack-name fuel-flow-ec2-dev \
-  --template-body file://cloudformation/ec2-instances.yaml \
-  --parameters \
-    ParameterKey=Environment,ParameterValue=dev \
-    ParameterKey=InstanceType,ParameterValue=t3.micro \
-    ParameterKey=KeyName,ParameterValue=my-key-pair \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --region us-east-1
-```
-
-### 4. Deploy RDS Database
+### 3. Deploy RDS Database
 
 ```bash
 aws cloudformation create-stack \
@@ -235,7 +218,6 @@ aws cloudformation update-stack \
 ```bash
 # Delete in reverse order of dependencies
 aws cloudformation delete-stack --stack-name fuel-flow-rds-dev
-aws cloudformation delete-stack --stack-name fuel-flow-ec2-dev
 aws cloudformation delete-stack --stack-name fuel-flow-s3-dev
 aws cloudformation delete-stack --stack-name fuel-flow-iam-dev
 ```

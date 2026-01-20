@@ -43,12 +43,11 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 - Creates PostgreSQL RDS instance with encryption
 - Generates and stores passwords in Secrets Manager
 
-### CloudFormation Templates (4 files)
+### CloudFormation Templates (3 files)
 
 1. **iam-roles.yaml** - IAM roles and policies
 2. **s3-buckets.yaml** - S3 storage buckets
-3. **ec2-instances.yaml** - EC2 compute instances  
-4. **rds-database.yaml** - RDS PostgreSQL database
+3. **rds-database.yaml** - RDS PostgreSQL database
 
 ### Configuration Files (1 file)
 
@@ -56,10 +55,10 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 
 ## Quick Stats
 
-- **Total Files**: 30+
+- **Total Files**: 29+
 - **Lines of Code**: 3,000+
 - **Terraform Modules**: 5
-- **CloudFormation Stacks**: 4
+- **CloudFormation Stacks**: 3
 - **AWS Resources**: 20+
 - **Documentation Pages**: 5
 
@@ -213,12 +212,12 @@ fuel-flow-infrastructure/
 │       ├── terraform-state/
 │       ├── iam/
 │       ├── s3/
-│       ├── ec2/
+│       ├── lambda/
+│       ├── api-gateway/
 │       └── rds/
 └── cloudformation/              # CloudFormation templates
     ├── iam-roles.yaml
     ├── s3-buckets.yaml
-    ├── ec2-instances.yaml
     └── rds-database.yaml
 ```
 

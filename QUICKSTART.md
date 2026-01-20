@@ -95,14 +95,7 @@ aws cloudformation create-stack \
   --template-body file://s3-buckets.yaml \
   --parameters ParameterKey=Environment,ParameterValue=dev
 
-# 3. Deploy EC2 instances (optional: add KeyName parameter)
-aws cloudformation create-stack \
-  --stack-name fuel-flow-ec2-dev \
-  --template-body file://ec2-instances.yaml \
-  --parameters ParameterKey=Environment,ParameterValue=dev \
-  --capabilities CAPABILITY_NAMED_IAM
-
-# 4. Deploy RDS database
+# 3. Deploy RDS database
 aws cloudformation create-stack \
   --stack-name fuel-flow-rds-dev \
   --template-body file://rds-database.yaml \

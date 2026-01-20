@@ -227,8 +227,6 @@ Deployment Order:
 
 3. RDS Stack (rds-database.yaml)
    └─► Creates: Database + VPC + Subnets + Secrets
-
-Note: EC2 template (ec2-instances.yaml) is legacy and kept for reference
 ```
 
 ## Deployment Workflows
