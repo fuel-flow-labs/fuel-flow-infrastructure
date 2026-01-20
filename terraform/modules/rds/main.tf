@@ -19,9 +19,9 @@ resource "aws_security_group" "rds_sg" {
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    description = "MySQL/Aurora from VPC"
-    from_port   = 3306
-    to_port     = 3306
+    description = "PostgreSQL from VPC"
+    from_port   = 5432
+    to_port     = 5432
     protocol    = "tcp"
     cidr_blocks = [data.aws_vpc.default.cidr_block]
   }
@@ -78,8 +78,8 @@ resource "aws_secretsmanager_secret_version" "db_password" {
 # RDS Instance
 resource "aws_db_instance" "main" {
   identifier     = "fuel-flow-db-${var.environment}"
-  engine         = "mysql"
-  engine_version = "8.0"
+  engine         = "postgres"
+  engine_version = "16.1"
 
   instance_class    = var.db_instance_class
   allocated_storage = var.allocated_storage
@@ -100,7 +100,7 @@ resource "aws_db_instance" "main" {
   skip_final_snapshot       = var.environment != "prod"
   final_snapshot_identifier = var.environment == "prod" ? "fuel-flow-db-${var.environment}-final-snapshot" : null
 
-  enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
 
   tags = {
     Name        = "fuel-flow-db-${var.environment}"

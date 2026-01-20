@@ -40,7 +40,7 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 - Configures Apache web server via user data
 
 **rds module** (4 files)
-- Creates MySQL RDS instance with encryption
+- Creates PostgreSQL RDS instance with encryption
 - Generates and stores passwords in Secrets Manager
 
 ### CloudFormation Templates (4 files)
@@ -48,7 +48,7 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 1. **iam-roles.yaml** - IAM roles and policies
 2. **s3-buckets.yaml** - S3 storage buckets
 3. **ec2-instances.yaml** - EC2 compute instances  
-4. **rds-database.yaml** - RDS MySQL database
+4. **rds-database.yaml** - RDS PostgreSQL database
 
 ### Configuration Files (1 file)
 
@@ -87,7 +87,7 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 - Versioning for critical data
 
 ### Database
-- RDS MySQL 8.0
+- RDS PostgreSQL 16.1
 - Encrypted storage (GP3)
 - Automated backups (7 days)
 - Secrets Manager integration
@@ -128,7 +128,7 @@ See **QUICKSTART.md** for detailed step-by-step instructions.
 AWS Account
 ├── VPC (Default)
 │   ├── EC2 Instances (Apache)
-│   └── RDS MySQL (Encrypted)
+│   └── RDS PostgreSQL (Encrypted)
 ├── S3 Buckets (3x, Encrypted)
 ├── IAM Roles (EC2, RDS, Lambda)
 ├── Secrets Manager (DB Password)
@@ -169,7 +169,7 @@ See **ARCHITECTURE.md** for detailed diagrams and explanations.
 
 After deployment:
 - ✅ Running EC2 web server (accessible via HTTP)
-- ✅ MySQL database (accessible from EC2)
+- ✅ PostgreSQL database (accessible from EC2)
 - ✅ S3 buckets for data, logs, and backups
 - ✅ Secure credential management
 - ✅ Infrastructure as code (can redeploy anytime)

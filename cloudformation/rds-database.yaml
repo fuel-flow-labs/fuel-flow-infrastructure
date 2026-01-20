@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'RDS MySQL database for Fuel Flow application'
+Description: 'RDS PostgreSQL database for Fuel Flow application'
 
 Parameters:
   Environment:
@@ -115,10 +115,10 @@ Resources:
       VpcId: !Ref VPC
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 3306
-          ToPort: 3306
+          FromPort: 5432
+          ToPort: 5432
           CidrIp: 10.0.0.0/16
-          Description: MySQL access from VPC
+          Description: PostgreSQL access from VPC
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -133,8 +133,8 @@ Resources:
     Type: AWS::RDS::DBInstance
     Properties:
       DBInstanceIdentifier: !Sub 'fuel-flow-db-${Environment}'
-      Engine: mysql
-      EngineVersion: '8.0'
+      Engine: postgres
+      EngineVersion: '16.1'
       DBInstanceClass: !Ref DBInstanceClass
       AllocatedStorage: !Ref AllocatedStorage
       StorageType: gp3
@@ -149,9 +149,8 @@ Resources:
       PreferredBackupWindow: '03:00-04:00'
       PreferredMaintenanceWindow: 'mon:04:00-mon:05:00'
       EnableCloudwatchLogsExports:
-        - error
-        - general
-        - slowquery
+        - postgresql
+        - upgrade
       DeletionProtection: !If [IsProd, true, false]
       Tags:
         - Key: Name

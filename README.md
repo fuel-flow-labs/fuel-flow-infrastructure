@@ -15,7 +15,7 @@ The infrastructure includes the following AWS resources:
 
 - **S3 Buckets**: Application data, logs, and backups storage
 - **EC2 Instances**: Compute resources for application hosting
-- **RDS MySQL**: Managed relational database
+- **RDS PostgreSQL**: Managed relational database
 - **IAM Roles**: Security policies for EC2, RDS, and Lambda
 - **Security Groups**: Network security configurations
 - **Terraform State Backend**: S3 + DynamoDB for remote state management
@@ -271,8 +271,8 @@ Creates EC2 instances with:
 
 ### RDS Module
 
-Creates MySQL RDS instance with:
-- MySQL 8.0 engine
+Creates PostgreSQL RDS instance with:
+- PostgreSQL 16.1 engine
 - Encrypted storage (GP3)
 - Automated backups (7-day retention)
 - CloudWatch logs export
@@ -410,7 +410,7 @@ aws cloudformation validate-template \
 Consider these improvements for production deployments:
 
 - Migrate from Amazon Linux 2 to Amazon Linux 2023 (AL2 EOL: June 2025)
-- Make RDS MySQL version configurable via variables
+- Make RDS PostgreSQL version configurable via variables
 - Implement variable-based SSH CIDR restrictions instead of 0.0.0.0/0
 - Add expanded special characters for RDS passwords
 - Align password policies between Terraform and CloudFormation

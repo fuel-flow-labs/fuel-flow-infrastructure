@@ -12,7 +12,7 @@ The Fuel Flow infrastructure consists of the following AWS components:
 │  │                    VPC (Default)                           │  │
 │  │                                                             │  │
 │  │  ┌───────────────┐         ┌──────────────────┐          │  │
-│  │  │  EC2 Instance │         │  RDS MySQL       │          │  │
+│  │  │  EC2 Instance │         │  RDS PostgreSQL  │          │  │
 │  │  │               │         │  Database        │          │  │
 │  │  │  - Apache     │────────▶│                  │          │  │
 │  │  │  - IAM Role   │         │  - Encrypted     │          │  │
@@ -89,12 +89,12 @@ S3 Buckets
 ### Compute & Database
 ```
 EC2 Instances
-  ├─► Connect to RDS MySQL
+  ├─► Connect to RDS PostgreSQL
   ├─► Read/Write to S3 Buckets
   ├─► Send logs to CloudWatch
   └─► Accessible via HTTP/HTTPS
 
-RDS MySQL Instance
+RDS PostgreSQL Instance
   ├─► Password in Secrets Manager
   ├─► Automated backups to S3
   ├─► Logs to CloudWatch
@@ -118,7 +118,7 @@ EC2 Instance(s)
     │
     ▼ (Within VPC)
 Security Group (RDS)
-├─ Inbound: MySQL (3306) from VPC CIDR only
+├─ Inbound: PostgreSQL (5432) from VPC CIDR only
 └─ Outbound: All traffic
     │
     ▼
@@ -198,7 +198,7 @@ terraform/
     │   ├── variables.tf
     │   └── outputs.tf
     └── rds/                     # RDS database
-        ├── main.tf              # MySQL instance + secrets
+        ├── main.tf              # PostgreSQL instance + secrets
         ├── variables.tf
         ├── outputs.tf
         └── versions.tf
