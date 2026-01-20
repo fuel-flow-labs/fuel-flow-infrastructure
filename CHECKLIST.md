@@ -20,9 +20,8 @@ Use this checklist before deploying infrastructure to ensure everything is confi
 - [ ] Updated `terraform.tfvars` with environment-specific values:
   - [ ] `aws_region` matches your preferred region
   - [ ] `environment` is set (dev/staging/prod)
-  - [ ] `ec2_key_name` is set (if SSH access needed)
   - [ ] S3 bucket names are unique globally
-  - [ ] Instance types match budget requirements
+  - [ ] RDS instance types match budget requirements
 - [ ] Reviewed `terraform/backend.tf` configuration
 - [ ] Understand state backend setup process
 
@@ -45,7 +44,7 @@ Use this checklist before deploying infrastructure to ensure everything is confi
   - [ ] `.terraform/` directory
   - [ ] `*.pem` key files
 - [ ] Understand AWS Secrets Manager usage for passwords
-- [ ] Plan for key pair management (EC2 SSH access)
+- [ ] Plan for API Gateway authorization strategy
 - [ ] Reviewed IAM role permissions
 - [ ] Understand security group configurations
 
@@ -53,8 +52,8 @@ Use this checklist before deploying infrastructure to ensure everything is confi
 
 - [ ] Reviewed estimated costs in ARCHITECTURE.md
 - [ ] Selected appropriate instance types for budget:
-  - [ ] EC2 instance type: `t3.micro` (dev) or larger (prod)
   - [ ] RDS instance class: `db.t3.micro` (dev) or larger (prod)
+  - [ ] Lambda memory: 256MB default, adjust based on needs
 - [ ] Understand AWS Free Tier limitations
 - [ ] Plan to set up AWS Budget alerts
 - [ ] Plan to tag resources for cost tracking
@@ -83,8 +82,7 @@ Use this checklist before deploying infrastructure to ensure everything is confi
 - [ ] Understand stack deployment order:
   1. [ ] IAM roles first
   2. [ ] S3 buckets second
-  3. [ ] EC2 instances third
-  4. [ ] RDS database last
+  3. [ ] RDS database third
 - [ ] Know how to check stack status
 - [ ] Understand how to delete stacks
 
@@ -112,9 +110,14 @@ Use this checklist before deploying infrastructure to ensure everything is confi
   aws s3 ls | grep fuel-flow
   ```
 
-- [ ] EC2 instances running
+- [ ] Lambda functions deployed
   ```bash
-  aws ec2 describe-instances --filters "Name=tag:Project,Values=fuel-flow"
+  aws lambda list-functions | grep fuel-flow
+  ```
+
+- [ ] API Gateway created
+  ```bash
+  aws apigateway get-rest-apis | grep fuel-flow
   ```
 
 - [ ] RDS instance available
@@ -134,12 +137,11 @@ Use this checklist before deploying infrastructure to ensure everything is confi
 
 ### Functional Testing
 
-- [ ] Can access EC2 instance via HTTP (public IP)
-- [ ] EC2 instance shows "Fuel Flow" test page
-- [ ] Can SSH to EC2 (if key pair configured)
+- [ ] Can access API Gateway endpoint via HTTP
+- [ ] Lambda function returns expected response
 - [ ] Can retrieve RDS password from Secrets Manager
-- [ ] EC2 instance can write to S3 buckets
-- [ ] RDS instance is accessible from EC2
+- [ ] Lambda function can connect to RDS
+- [ ] Lambda function can write to S3 buckets
 - [ ] CloudWatch logs are being generated
 
 ## Post-Deployment Tasks
@@ -166,16 +168,23 @@ Use this checklist before deploying infrastructure to ensure everything is confi
 ### Issue: Insufficient AWS permissions
 **Solution**: Verify IAM user/role has required permissions (AdministratorAccess recommended for initial setup)
 
-### Issue: EC2 instance not accessible
+### Issue: Lambda function timeout
 **Solution**: 
-- Check security group allows traffic
-- Verify instance is running
-- Check route tables and internet gateway
+- Increase timeout in Lambda configuration
+- Check VPC configuration if accessing RDS
+- Review CloudWatch logs for errors
+
+### Issue: API Gateway 502/504 errors
+**Solution**:
+- Check Lambda function logs in CloudWatch
+- Verify Lambda has correct IAM permissions
+- Check Lambda function is responding correctly
 
 ### Issue: RDS connection timeout
 **Solution**:
 - RDS is only accessible from within VPC
-- Connect from EC2 instance, not from internet
+- Ensure Lambda is configured with VPC access
+- Check security groups allow Lambda to RDS traffic
 
 ### Issue: CloudFormation stack rollback
 **Solution**:
@@ -190,7 +199,7 @@ Use this checklist before deploying infrastructure to ensure everything is confi
 **Terraform:**
 ```bash
 # Destroy specific module
-terraform destroy -target=module.ec2
+terraform destroy -target=module.lambda
 
 # Destroy everything
 terraform destroy
@@ -199,11 +208,10 @@ terraform destroy
 **CloudFormation:**
 ```bash
 # Delete specific stack
-aws cloudformation delete-stack --stack-name fuel-flow-ec2-dev
+aws cloudformation delete-stack --stack-name fuel-flow-rds-dev
 
 # Delete all stacks (in reverse order)
 aws cloudformation delete-stack --stack-name fuel-flow-rds-dev
-aws cloudformation delete-stack --stack-name fuel-flow-ec2-dev
 aws cloudformation delete-stack --stack-name fuel-flow-s3-dev
 aws cloudformation delete-stack --stack-name fuel-flow-iam-dev
 ```

@@ -12,11 +12,11 @@ The Fuel Flow infrastructure consists of the following AWS components:
 │  │                    VPC (Default)                           │  │
 │  │                                                             │  │
 │  │  ┌───────────────┐         ┌──────────────────┐          │  │
-│  │  │  EC2 Instance │         │  RDS PostgreSQL  │          │  │
-│  │  │               │         │  Database        │          │  │
-│  │  │  - Apache     │────────▶│                  │          │  │
-│  │  │  - IAM Role   │         │  - Encrypted     │          │  │
-│  │  │               │         │  - Multi-AZ      │          │  │
+│  │  │ Lambda        │         │  RDS PostgreSQL  │          │  │
+│  │  │ Functions     │         │  Database        │          │  │
+│  │  │               │────────▶│                  │          │  │
+│  │  │  - Node.js    │         │  - Encrypted     │          │  │
+│  │  │  - IAM Role   │         │  - Multi-AZ      │          │  │
 │  │  └───────┬───────┘         └──────────────────┘          │  │
 │  │          │                                                 │  │
 │  │          │ Access                                          │  │
@@ -58,11 +58,20 @@ The Fuel Flow infrastructure consists of the following AWS components:
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │                     IAM Roles                             │  │
 │  │                                                            │  │
-│  │  • EC2 Instance Role (S3 + CloudWatch access)            │  │
+│  │  • Lambda Execution Role (S3 + VPC + CloudWatch access)  │  │
 │  │  • RDS Monitoring Role (Enhanced Monitoring)             │  │
-│  │  • Lambda Execution Role (S3 + Logs access)              │  │
+│  │  • API Gateway Invocation (Logs access)                  │  │
 │  └───────────────────────────────────────────────────────────┘  │
 └─────────────────────────────────────────────────────────────────┘
+
+      ▲
+      │
+      │ HTTP/HTTPS
+      │
+┌─────┴──────┐
+│ API Gateway│
+│ REST API   │
+└────────────┘
 ```
 
 ## Resource Relationships
@@ -70,16 +79,15 @@ The Fuel Flow infrastructure consists of the following AWS components:
 ### IAM Dependencies
 ```
 IAM Roles
-  ├─► EC2 Instance Profile ──► EC2 Instances
-  ├─► RDS Monitoring Role ──► RDS Instance
-  └─► Lambda Execution Role
+  ├─► Lambda Execution Role ──► Lambda Functions
+  └─► RDS Monitoring Role ──► RDS Instance
 ```
 
 ### Storage Dependencies
 ```
 S3 Buckets
   ├─► Application Data Bucket
-  │     └─► Accessed by EC2 Instances via IAM Role
+  │     └─► Accessed by Lambda Functions via IAM Role
   ├─► Logs Bucket
   │     └─► CloudWatch logs, Application logs
   └─► Backups Bucket
@@ -88,17 +96,22 @@ S3 Buckets
 
 ### Compute & Database
 ```
-EC2 Instances
+Lambda Functions
   ├─► Connect to RDS PostgreSQL
   ├─► Read/Write to S3 Buckets
   ├─► Send logs to CloudWatch
-  └─► Accessible via HTTP/HTTPS
+  └─► Invoked by API Gateway
+
+API Gateway
+  ├─► Routes requests to Lambda
+  ├─► Handles authentication/authorization
+  └─► Logs to CloudWatch
 
 RDS PostgreSQL Instance
   ├─► Password in Secrets Manager
   ├─► Automated backups to S3
   ├─► Logs to CloudWatch
-  └─► Accessible from EC2 in VPC
+  └─► Accessible from Lambda in VPC
 ```
 
 ## Security Architecture
@@ -109,12 +122,10 @@ RDS PostgreSQL Instance
 Internet
     │
     ▼
-Security Group (EC2)
-├─ Inbound: SSH (22), HTTP (80), HTTPS (443)
-└─ Outbound: All traffic
+API Gateway (HTTPS)
     │
     ▼
-EC2 Instance(s)
+Lambda Functions (in VPC)
     │
     ▼ (Within VPC)
 Security Group (RDS)
@@ -122,24 +133,20 @@ Security Group (RDS)
 └─ Outbound: All traffic
     │
     ▼
-RDS MySQL Instance
+RDS PostgreSQL Instance
 ```
 
 ### Identity & Access Management
 
-1. **EC2 Instance Role**
+1. **Lambda Execution Role**
    - S3 read/write access (scoped to fuel-flow buckets)
    - CloudWatch logs write access
-   - No direct AWS API access
+   - VPC access for RDS connectivity
+   - Secrets Manager read access
 
 2. **RDS Monitoring Role**
    - Enhanced monitoring metrics to CloudWatch
    - Managed by AWS
-
-3. **Lambda Execution Role**
-   - Basic Lambda execution
-   - S3 access for data processing
-   - CloudWatch logs
 
 ### Data Encryption
 
@@ -157,19 +164,19 @@ RDS MySQL Instance
 
 ### Current Architecture
 - **RDS**: Single-AZ (dev), configurable Multi-AZ (prod)
-- **EC2**: Single instance (dev), scalable to multiple instances
+- **Lambda**: Auto-scaling, serverless (no instances to manage)
 - **S3**: 99.999999999% durability (11 nines)
 - **Backups**: 7-day automated RDS backups
 
 ### Recommended Production Enhancements
 ```
 Production Improvements:
-├─ Auto Scaling Group for EC2
-├─ Application Load Balancer
 ├─ Multi-AZ RDS deployment
-├─ CloudFront for S3 content delivery
-├─ Route53 for DNS management
-└─ AWS WAF for web application firewall
+├─ Lambda Reserved Concurrency
+├─ API Gateway Custom Domain + CloudFront
+├─ WAF for API Gateway
+├─ VPC Endpoints for S3/Secrets Manager
+└─ Route53 for DNS management
 ```
 
 ## Terraform Module Structure
@@ -186,15 +193,19 @@ terraform/
     │   ├── variables.tf
     │   └── outputs.tf
     ├── iam/                     # IAM roles and policies
-    │   ├── main.tf              # EC2, RDS, Lambda roles
+    │   ├── main.tf              # Lambda, RDS roles
     │   ├── variables.tf
     │   └── outputs.tf
     ├── s3/                      # S3 buckets
     │   ├── main.tf              # App data, logs, backups
     │   ├── variables.tf
     │   └── outputs.tf
-    ├── ec2/                     # EC2 instances
-    │   ├── main.tf              # Instances + security groups
+    ├── lambda/                  # Lambda functions
+    │   ├── main.tf              # Serverless functions
+    │   ├── variables.tf
+    │   └── outputs.tf
+    ├── api-gateway/             # API Gateway
+    │   ├── main.tf              # REST API configuration
     │   ├── variables.tf
     │   └── outputs.tf
     └── rds/                     # RDS database
@@ -214,12 +225,10 @@ Deployment Order:
 2. S3 Stack (s3-buckets.yaml)
    └─► Creates storage buckets
 
-3. EC2 Stack (ec2-instances.yaml)
-   ├─► References: IAM Stack outputs
-   └─► Creates: Instances + Security Groups
-
-4. RDS Stack (rds-database.yaml)
+3. RDS Stack (rds-database.yaml)
    └─► Creates: Database + VPC + Subnets + Secrets
+
+Note: EC2 template (ec2-instances.yaml) is legacy and kept for reference
 ```
 
 ## Deployment Workflows
@@ -237,7 +246,8 @@ terraform apply
    ├─► module.terraform_state (creates state backend)
    ├─► module.iam (creates IAM roles)
    ├─► module.s3 (creates S3 buckets)
-   ├─► module.ec2 (creates instances) [depends on IAM]
+   ├─► module.api_gateway (creates API Gateway)
+   ├─► module.lambda (creates functions) [depends on IAM, API Gateway]
    └─► module.rds (creates database)
 ```
 
@@ -246,14 +256,10 @@ terraform apply
 Stack Creation Sequence:
    │
    ├─► fuel-flow-iam-dev
-   │     └─► Exports: Role ARNs, Instance Profile
+   │     └─► Exports: Role ARNs
    │
    ├─► fuel-flow-s3-dev
    │     └─► Exports: Bucket names
-   │
-   ├─► fuel-flow-ec2-dev
-   │     ├─► Imports: IAM outputs
-   │     └─► Exports: Instance IDs, IPs
    │
    └─► fuel-flow-rds-dev
          └─► Exports: Endpoint, Secret ARN
@@ -262,60 +268,63 @@ Stack Creation Sequence:
 ## Cost Estimation (Approximate Monthly)
 
 ### Development Environment
-- EC2 t3.micro (1 instance): ~$7.50
+- Lambda (1M requests/mo): ~$0.20
+- API Gateway (1M requests): ~$3.50
 - RDS db.t3.micro (single-AZ): ~$12
 - S3 storage (minimal): ~$0.50
 - DynamoDB (on-demand): ~$0.10
 - Secrets Manager: ~$0.40
-- **Total: ~$20.50/month**
+- **Total: ~$17/month**
 
 ### Production Environment (Estimated)
-- EC2 t3.small (2 instances): ~$30
+- Lambda (10M requests/mo): ~$2.00
+- API Gateway (10M requests): ~$35
 - RDS db.t3.small (multi-AZ): ~$48
 - S3 storage (100GB): ~$2.30
 - DynamoDB (on-demand): ~$0.25
-- Application Load Balancer: ~$16
 - CloudWatch: ~$3
 - Secrets Manager: ~$0.40
 - Data transfer: ~$5
-- **Total: ~$105/month**
+- **Total: ~$96/month**
 
 ## Monitoring & Observability
 
 ### CloudWatch Metrics
-- EC2: CPU, Memory, Network, Disk
+- Lambda: Invocations, Duration, Errors, Throttles
+- API Gateway: Request count, Latency, Errors
 - RDS: CPU, Connections, Storage, Replication lag
 - S3: Bucket size, Request metrics
 - DynamoDB: Read/Write capacity, Throttles
 
 ### CloudWatch Logs
-- EC2 system logs
-- Apache access/error logs
+- Lambda function logs
+- API Gateway access logs
 - RDS error, general, and slow query logs
 - CloudFormation/Terraform deployment logs
 
 ### Recommended Alarms
-- EC2 CPU > 80%
+- Lambda errors > 1%
+- Lambda duration > 80% of timeout
+- API Gateway 5XX errors
 - RDS Storage < 10% free
 - RDS CPU > 80%
 - DynamoDB throttled requests
-- High error rates
 
 ## Scaling Considerations
 
 ### Horizontal Scaling
-- Add more EC2 instances
-- Use Auto Scaling Groups
-- Implement Application Load Balancer
+- Lambda auto-scales automatically (up to account limits)
+- Configure Reserved Concurrency for predictable workloads
+- Use Provisioned Concurrency for consistent performance
 
 ### Vertical Scaling
-- Increase EC2 instance type
+- Increase Lambda memory allocation (also increases CPU)
 - Increase RDS instance class
 - Increase RDS storage
 
 ### Database Scaling
 - Read replicas for read-heavy workloads
-- Aurora for better performance
+- Aurora Serverless for variable workloads
 - ElastiCache for caching layer
 
 ## Security Best Practices Implemented

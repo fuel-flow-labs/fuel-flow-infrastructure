@@ -32,7 +32,7 @@ This repository provides a complete Infrastructure as Code (IaC) solution for de
 - Enables versioning, encryption, and blocks public access
 
 **iam module** (3 files)  
-- Creates IAM roles for EC2, RDS, and Lambda
+- Creates IAM roles for Lambda and RDS
 - Implements least-privilege access policies
 
 **ec2 module** (3 files)
